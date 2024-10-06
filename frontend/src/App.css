@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@font-face {
+  font-family:'general';
+  src: url('/Fonts/TTF/GeneralSans-Variable.ttf');
+}
+*{
+  padding:0;
+  margin:0;
+  box-sizing: border-box;
+  font-family:'general',system-ui;
+}
+.gallery-grid{
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows:repeat(2, 200px);
+  grid-auto-columns:300px;
+  column-gap:30px;
+  row-gap:15px;
+  overflow-x:scroll;
+  width: 100%;
+  padding-block:20px;
+  white-space: nowrap;
+  scrollbar-width: thin;
+}
+.grid-item {
+  width: 300px;
+  height: 200px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  background-color:#d5d5d5;
+}

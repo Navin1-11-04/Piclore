@@ -1,35 +1,42 @@
 "use client";
-
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "../../utils/cn";
+import { gsap } from "gsap";
+import { IconX } from "@tabler/icons-react";
 
 export function PlaceholdersAndVanishInput({
+  value, // Accept value from parent
   placeholders,
   onChange,
-  onSubmit
+  onSubmit,
+  onVanishComplete,
 }) {
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
-
   const intervalRef = useRef(null);
+  const inputRef = useRef(null);
+  const canvasRef = useRef(null);
+  const newDataRef = useRef([]);
+  const [animating, setAnimating] = useState(false);
+
   const startAnimation = () => {
     intervalRef.current = setInterval(() => {
       setCurrentPlaceholder((prev) => (prev + 1) % placeholders.length);
     }, 3000);
   };
+
   const handleVisibilityChange = () => {
     if (document.visibilityState !== "visible" && intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     } else if (document.visibilityState === "visible") {
-      startAnimation(); 
+      startAnimation();
     }
   };
 
   useEffect(() => {
     startAnimation();
     document.addEventListener("visibilitychange", handleVisibilityChange);
-
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -38,17 +45,11 @@ export function PlaceholdersAndVanishInput({
     };
   }, [placeholders]);
 
-  const canvasRef = useRef(null);
-  const newDataRef = useRef([]);
-  const inputRef = useRef(null);
-  const [value, setValue] = useState("");
-  const [animating, setAnimating] = useState(false);
-
   const draw = useCallback(() => {
     if (!inputRef.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
 
     canvas.width = 800;
@@ -120,7 +121,9 @@ export function PlaceholdersAndVanishInput({
           }
         }
         newDataRef.current = newArr;
-        const ctx = canvasRef.current?.getContext("2d");
+        const ctx = canvasRef.current?.getContext("2d", {
+          willReadFrequently: true,
+        });
         if (ctx) {
           ctx.clearRect(pos, 0, 800, 800);
           newDataRef.current.forEach((t) => {
@@ -134,11 +137,14 @@ export function PlaceholdersAndVanishInput({
             }
           });
         }
-        if (newDataRef.current.length > 0) {
-          animateFrame(pos - 8);
-        } else {
-          setValue("");
+
+        if (newDataRef.current.length === 0) {
           setAnimating(false);
+          if (onVanishComplete) {
+            onVanishComplete();
+          }
+        } else {
+          animateFrame(pos - 8);
         }
       });
     };
@@ -155,11 +161,11 @@ export function PlaceholdersAndVanishInput({
     setAnimating(true);
     draw();
 
-    const value = inputRef.current?.value || "";
-    if (value && inputRef.current) {
-      const maxX = newDataRef.current.reduce((prev, current) => (current.x > prev ? current.x : prev), 0);
-      animate(maxX);
-    }
+    const maxX = newDataRef.current.reduce(
+      (prev, current) => (current.x > prev ? current.x : prev),
+      0
+    );
+    animate(maxX);
   };
 
   const handleSubmit = (e) => {
@@ -167,24 +173,26 @@ export function PlaceholdersAndVanishInput({
     vanishAndSubmit();
     onSubmit && onSubmit(e);
   };
+
   return (
-    (<form
+    <form
       className={cn(
-        "w-full relative mx-auto bg-[#fff9ff] dark:bg-zinc-800 h-[55px] overflow-hidden transition duration-200 backdrop-blur-lg",
-        value && "bg-zinc-100"
+        `w-full relative h-[50px] mx-auto bg-zinc-50 dark:bg-zinc-800 overflow-hidden transition duration-200 backdrop-blur-lg`,
+        value && "bg-zinc-200"
       )}
-      onSubmit={handleSubmit}>
+      onSubmit={handleSubmit}
+    >
       <canvas
         className={cn(
-          "absolute pointer-events-none  text-base transform scale-50 top-[20%] left-2 sm:left-8 origin-top-left filter invert dark:invert-0 pr-20",
+          "absolute pointer-events-none  text-[15px] font-[430] transform scale-50 top-[20%] left-2 sm:left-8 origin-top-left filter invert dark:invert-0 pr-20",
           !animating ? "opacity-0" : "opacity-100"
         )}
-        ref={canvasRef} />
+        ref={canvasRef}
+      />
       <input
         onChange={(e) => {
           if (!animating) {
-            setValue(e.target.value);
-            onChange && onChange(e);
+            onChange && onChange(e); // Let the parent update the value
           }
         }}
         onKeyDown={handleKeyDown}
@@ -192,44 +200,31 @@ export function PlaceholdersAndVanishInput({
         value={value}
         type="text"
         className={cn(
-          "w-full relative text-sm sm:text-base z-50 border-none dark:text-white bg-transparent text-black h-full rounded-full focus:outline-none focus:ring-0 pl-4 sm:pl-10 pr-20",
+          "w-full relative text-sm sm:text-[15px] font-[430] z-50 border-none dark:text-white bg-transparent text-[#1f1f1f] h-full rounded-full focus:outline-none focus:ring-0 pl-4 sm:pl-10 pr-20",
           animating && "text-transparent dark:text-transparent"
-        )} />
-      {/* <button
+        )}
+      />
+      <button
         disabled={!value}
-        type="submit"
-        className="absolute right-2 top-1/2 z-50 -translate-y-1/2 h-8 w-8 rounded-full disabled:bg-gray-100 bg-black dark:bg-zinc-900 dark:disabled:bg-zinc-800 transition duration-200 flex items-center justify-center">
-        <motion.svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="text-gray-300 h-4 w-4">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-          <motion.path
-            d="M5 12l14 0"
-            initial={{
-              strokeDasharray: "50%",
-              strokeDashoffset: "50%",
-            }}
-            animate={{
-              strokeDashoffset: value ? 0 : "50%",
-            }}
-            transition={{
-              duration: 0.3,
-              ease: "linear",
-            }} />
-          <path d="M13 18l6 -6" />
-          <path d="M13 6l6 6" />
-        </motion.svg>
-      </button> */}
-      <div
-        className="absolute inset-0 flex items-center rounded-full pointer-events-none">
+        type="button"
+        onClick={() => {
+          if (!value) return;
+          vanishAndSubmit();
+        }}
+        className={cn(
+          "absolute right-2 top-1/2 z-50 -translate-y-1/2 h-8 w-8 rounded-full transition duration-200 flex items-center justify-center",
+          !value ? "bg-gray-100 dark:bg-zinc-800" : "bg-black dark:bg-zinc-900"
+        )}
+      >
+        <IconX
+          className={cn(
+            "h-4 w-4 text-gray-300 transition duration-200",
+            !value ? "opacity-40" : "opacity-100"
+          )}
+        />
+      </button>
+
+      <div className="absolute inset-0 flex items-center rounded-full pointer-events-none">
         <AnimatePresence mode="wait">
           {!value && (
             <motion.p
@@ -250,12 +245,13 @@ export function PlaceholdersAndVanishInput({
                 duration: 0.3,
                 ease: "linear",
               }}
-              className="dark:text-zinc-500 text-sm sm:text-base font-normal text-neutral-500 pl-4 sm:pl-12 text-left w-[calc(100%-2rem)] truncate">
+              className="dark:text-zinc-500 text-sm sm:text-[15px] text-[#888] font-[420] pl-4 sm:pl-12 text-left w-[calc(100%-2rem)] truncate"
+            >
               {placeholders[currentPlaceholder]}
             </motion.p>
           )}
         </AnimatePresence>
       </div>
-    </form>)
+    </form>
   );
 }

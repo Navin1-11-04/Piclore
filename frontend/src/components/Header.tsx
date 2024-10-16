@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Button } from '../components/ui/button.tsx'; // Assuming Button is being used for closing the sheet
 import Favourites from '../pages/Favourites.tsx'; // Ensure the correct import path
 import { LuHelpCircle } from 'react-icons/lu';
 import { FaRegStar } from 'react-icons/fa';

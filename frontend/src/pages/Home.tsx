@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FaStar, FaRegStar } from "react-icons/fa";
-import { Drawer, DrawerTrigger, DrawerContent,DrawerHeader,DrawerTitle, DrawerDescription } from '../components/ui/drawer.tsx'; // Assuming Drawer components are in a Drawer.js file
+import { Drawer,DrawerContent,DrawerHeader,DrawerTitle, DrawerDescription } from '../components/ui/drawer.tsx'; // Assuming Drawer components are in a Drawer.js file
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { IoClose } from "react-icons/io5";
 const Home: React.FC = () => {
